@@ -2,6 +2,7 @@ from flask import Flask
 import feedparser
 from flask import render_template
 from flask import request
+from flask import make_response
 import json
 import urllib
 import urllib2
@@ -25,6 +26,7 @@ WEATHER_URL="http://api.openweathermap.org/data/2.5/weather?q={}&units=metric&ap
 
 @app.route("/")
 def home():
+  currencies=[]
   publication = request.args.get('publication')
   if not publication:
     publication = DEFAULTS['publication']
@@ -39,11 +41,12 @@ def home():
   currency_to = request.args.get('currency_to')
   if not currency_to:
      currency_to = DEFAULTS['currency_to']
-  rate = get_rate(currency_from, currency_to)
+  rate, currencies = get_rate(currency_from, currency_to)
   return render_template("home.html", articles=articles,weather=weather,
                                       currency_from=currency_from,
                                       currency_to=currency_to,
-                                      rate=rate
+                                      rate=rate,
+                                      currencies=sorted(currencies)
                         )
 
 def get_news(query):
@@ -74,7 +77,7 @@ def get_rate(frm,to):
   parsed = json.loads(all_currency).get('rates')
   frm_rate = parsed.get(frm.upper())
   to_rate = parsed.get(to.upper())
-  return to_rate/frm_rate
+  return ((to_rate / frm_rate), parsed.keys())
 
 if __name__ == '__main__':
   app.run(port=5300,debug=True)
